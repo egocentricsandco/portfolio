@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+      }
+
+      iframe {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        border: none;
+        outline: none;
+        z-index: 1;
+      }
+
+      .clock-wrap {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+        text-align: center;
+        color: var(--fg);
+
+        /* Hidden by default, fades in after inactivity */
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.8s ease;
+      }
+
+      .clock-wrap.visible {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .clock-label {
+        font-size: 100px;
+        letter-spacing: -0.3em;
+        text-transform: uppercase;
+        opacity: 0.6;
+        margin-bottom: 8px;
+      }
+
+      .clock-time {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        font-size: 20rem;
+        font-weight: 700;
+        letter-spacing: -0.05em;
+        /* tabular-nums keeps digit widths equal so the clock doesn't jitter */
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum";
+        color: orangered;
+      }
+
+      /* Separator between hour/minute/second — printed via CSS content
+         so it can be swapped out per breakpoint below */
+      .clock-sep::before {
+        content: ":";
+      }
+
+      /* Phone layout: stack hour / sep / minute vertically, hide seconds,
+         and swap the ":" separator for ".." */
+      @media (max-width: 600px) {
+        .clock-time {
+          flex-direction: column;
+          align-items: center;
+          font-size: 8rem; /* smaller so it fits stacked on a phone screen */
+          letter-spacing: -0.05em;
+        }
+
+        .clock-sep::before {
+          content: "..";
+        }
+      }
+    </style>
+    <title>MARA LECOIU</title>
+    <link rel="icon" type="image/x-icon" href="favicon.png">
+  </head>
+  <body>
+    <div class="clock-wrap">
+      <div class="clock-time" id="clock">
+        <span class="clock-hour">00</span>
+        <span class="clock-sep"></span>
+        <span class="clock-minute">00</span>
+        <span class="clock-sep"></span>
+        <span class="clock-second">00</span>
+      </div>
+    </div>
+
+    <iframe
+      src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_BsjnazEM57i2jyvFVOyYg0nXkzaRGXNZTfB8-gVELT6pWv5blWSslAd8s9qYnTQJqrUJDeXikZOo/pubhtml?widget=true&amp;headers=false&amp;rm=minimal"
+      frameborder="0" ></iframe>
+    <script>
+      // Change this to whatever timezone you want the clock to display.
+      // Use 'Asia/Tokyo', 'Europe/London', 'Europe/Bucharest', etc.
+      const TIMEZONE = "Europe/London";
+
+      function pad(n) {
+        return String(n).padStart(2, "0");
+      }
+
+      const hourEl = document.querySelector(".clock-hour");
+      const minuteEl = document.querySelector(".clock-minute");
+      const secondEl = document.querySelector(".clock-second");
+
+      function updateClock() {
+        const now = new Date();
+
+        // Get the time in the target timezone
+        const parts = new Intl.DateTimeFormat("en-GB", {
+          timeZone: TIMEZONE,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        }).formatToParts(now);
+
+        const map = {};
+        parts.forEach((p) => (map[p.type] = p.value));
+
+        hourEl.textContent = map.hour;
+        minuteEl.textContent = map.minute;
+        secondEl.textContent = map.second;
+      }
+
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      // --- Inactivity detection ---
+      const INACTIVITY_DELAY = 20000; // 20 seconds, in milliseconds
+      const clockWrap = document.querySelector(".clock-wrap");
+      let inactivityTimer;
+
+      function showClock() {
+        clockWrap.classList.add("visible");
+      }
+
+      function hideClock() {
+        clockWrap.classList.remove("visible");
+      }
+
+      function resetInactivityTimer(evt) {
+        console.log("Activity detected:", evt ? evt.type : "initial load");
+        hideClock();
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => {
+          console.log("20s elapsed, showing clock");
+          showClock();
+        }, INACTIVITY_DELAY);
+      }
+
+      // Any of these count as "activity" and restart the countdown
+      ["mousemove", "mousedown", "keydown", "scroll", "touchstart"].forEach(
+        (evt) => {
+          window.addEventListener(evt, resetInactivityTimer, { passive: true });
+        },
+      );
+
+      // Start the timer as soon as the page loads
+      resetInactivityTimer();
+    </script>
+  </body>
+</html>
